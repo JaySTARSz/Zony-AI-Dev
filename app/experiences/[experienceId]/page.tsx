@@ -1,60 +1,49 @@
-import { Button } from "@whop/react/components";
-import { headers } from "next/headers";
-import Link from "next/link";
-import { whopsdk } from "@/lib/whop-sdk";
+﻿"use client";
 
-export default async function ExperiencePage({
-	params,
-}: {
-	params: Promise<{ experienceId: string }>;
-}) {
-	const { experienceId } = await params;
-	// Ensure the user is logged in on whop.
-	const { userId } = await whopsdk.verifyUserToken(await headers());
+import { useEffect, useState } from "react";
+import ScriptGenerator from "@/app/components/ScriptGenerator";
 
-	// Fetch the neccessary data we want from whop.
-	const [experience, user, access] = await Promise.all([
-		whopsdk.experiences.retrieve(experienceId),
-		whopsdk.users.retrieve(userId),
-		whopsdk.users.checkAccess(experienceId, { id: userId }),
-	]);
+export default function ExperiencePage() {
+  const [mounted, setMounted] = useState(false);
+  const [userId, setUserId] = useState("");
+  const [userProducts, setUserProducts] = useState<string[]>([]);
 
-	const displayName = user.name || `@${user.username}`;
+  useEffect(() => {
+    setMounted(true);
 
-	return (
-		<div className="flex flex-col p-8 gap-4">
-			<div className="flex justify-between items-center gap-4">
-				<h1 className="text-9">
-					Hi <strong>{displayName}</strong>!
-				</h1>
-				<Link href="https://docs.whop.com/apps" target="_blank">
-					<Button variant="classic" className="w-full" size="3">
-						Developer Docs
-					</Button>
-				</Link>
-			</div>
+    const fetchUserData = async () => {
+      try {
+        const token = new URLSearchParams(window.location.search).get("whop-dev-user-token");
+        if (!token) return;
 
-			<p className="text-3 text-gray-10">
-				Welcome to you whop app! Replace this template with your own app. To
-				get you started, here's some helpful data you can fetch from whop.
-			</p>
+        // Decode token to get userId
+        const parts = token.split(".");
+        if (parts.length !== 3) return;
 
-			<h3 className="text-6 font-bold">Experience data</h3>
-			<JsonViewer data={experience} />
+        const decoded = JSON.parse(atob(parts[1]));
+        const uid = decoded.sub;
+        setUserId(uid);
 
-			<h3 className="text-6 font-bold">User data</h3>
-			<JsonViewer data={user} />
+        // Fetch user memberships to get products
+        const response = await fetch(`/api/user-access?userId=${uid}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
 
-			<h3 className="text-6 font-bold">Access data</h3>
-			<JsonViewer data={access} />
-		</div>
-	);
-}
+        if (response.ok) {
+          const data = await response.json();
+          setUserProducts(data.products || []);
+        }
+      } catch (error) {
+        console.error("Auth error:", error);
+      }
+    };
 
-function JsonViewer({ data }: { data: any }) {
-	return (
-		<pre className="text-2 border border-gray-a4 rounded-lg p-4 bg-gray-a2 max-h-72 overflow-y-auto">
-			<code className="text-gray-10">{JSON.stringify(data, null, 2)}</code>
-		</pre>
-	);
+    fetchUserData();
+  }, []);
+
+  if (!mounted) {
+    return <div style={{ padding: "20px", textAlign: "center" }}>Loading...</div>;
+  }
+
+  return <ScriptGenerator userId={userId} userProducts={userProducts} />;
 }
