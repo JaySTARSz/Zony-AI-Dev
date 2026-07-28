@@ -47,7 +47,7 @@ importers:
         specifier: 19.2.2
         version: 19.2.2(@types/react@19.2.2)
       '@whop-apps/dev-proxy':
-        specifier: 0.0.1-canary.117
+        specifier: ^0.0.1-canary.117
         version: 0.0.1-canary.117
       dotenv-cli:
         specifier: ^10.0.0
