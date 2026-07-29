@@ -30,11 +30,11 @@ export async function POST(req: NextRequest) {
     
     const memberships = memberData.memberships || [];
     const hasGameDev = memberships.some(
-      (m) => m.product_id === 'prod_2NCaLmIX3miCc' && 
+  (m: any) => m.product_id === 'prod_2NCaLmIX3miCc' && 
              ['active', 'trialing', 'completed', 'past_due'].includes(m.status)
     );
     const hasVideoGen = memberships.some(
-      (m) => m.product_id === 'prod_rvBtXBKVYH9wR' && 
+  (m: any) => m.product_id === 'prod_rvBtXBKVYH9wR' &&  
              ['active', 'trialing', 'completed', 'past_due'].includes(m.status)
     );
 
