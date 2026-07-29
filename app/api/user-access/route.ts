@@ -11,17 +11,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = await fetch(https://api.whop.com/api/v1/members/, {
+    const response = await fetch(`https://api.whop.com/api/v1/members/${userId}`, {
       method: 'GET',
       headers: {
-        Authorization: Bearer ,
+        Authorization: `Bearer ${process.env.WHOP_API_KEY}`,
         'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: Whop API error:  },
+        { error: `Whop API error: ${response.status}` },
         { status: response.status }
       );
     }
