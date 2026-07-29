@@ -37,7 +37,10 @@ export default function ExperiencePage({ params }: { params: { experienceId: str
       })
         .then(res => res.json())
         .then(data => {
-          setUserProducts(data.products || []);
+          const products = [];
+          if (data.hasGameDev) products.push('prod_2NCaLmIX3miCc');
+          if (data.hasVideoGen) products.push('prod_rvBtXBKVYH9wR');
+          setUserProducts(products);
           setLoading(false);
         })
         .catch(err => {
