@@ -20,7 +20,6 @@ export default function ExperiencePage({ params }: { params: { experienceId: str
       return;
     }
 
-    // Decode JWT to extract user ID
     try {
       const parts = devToken.split('.');
       if (parts.length !== 3) throw new Error('Invalid token format');
@@ -29,7 +28,6 @@ export default function ExperiencePage({ params }: { params: { experienceId: str
       const extractedUserId = payload.sub;
       setUserId(extractedUserId);
 
-      // Fetch user's product memberships
       fetch('/api/user-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
