@@ -1,10 +1,10 @@
 ﻿'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, Suspense } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import ScriptGenerator from '@/app/components/ScriptGenerator';
 
-export default function JoinPage() {
+function JoinPageContent() {
   const searchParams = useSearchParams();
   const devToken = searchParams.get('whop-dev-user-token');
   
@@ -56,4 +56,12 @@ export default function JoinPage() {
   if (!userId) return <div style={{ padding: '20px', color: 'red' }}>No user ID found</div>;
 
   return <ScriptGenerator userId={userId} userProducts={userProducts} />;
+}
+
+export default function JoinPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '20px' }}>Loading...</div>}>
+      <JoinPageContent />
+    </Suspense>
+  );
 }
