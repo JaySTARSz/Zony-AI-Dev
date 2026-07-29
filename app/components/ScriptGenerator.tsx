@@ -1,235 +1,148 @@
-﻿"use client";
+﻿'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 interface ScriptGeneratorProps {
-  userProducts?: string[];
-  userId?: string;
+  accessCode: string;
 }
 
-export default function ScriptGenerator({ userProducts = [], userId = "" }: ScriptGeneratorProps) {
-  const [prompt, setPrompt] = useState("");
-  const [type, setType] = useState("code");
-  const [result, setResult] = useState<string>("");
-  const [resultType, setResultType] = useState<"code" | "video" | null>(null);
+export default function ScriptGenerator({ accessCode }: ScriptGeneratorProps) {
+  const [generatorType, setGeneratorType] = useState<'game' | 'video'>('game');
+  const [prompt, setPrompt] = useState('');
+  const [generatedScript, setGeneratedScript] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const hasGameDevAccess = userProducts.includes("prod_2NCaLmIX3miCc");
-  const hasVideoGenAccess = userProducts.includes("prod_rvBtXBKVYH9wR");
+  const [error, setError] = useState('');
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      setError("Please enter a prompt");
-      return;
-    }
-
-    if (type === "code" && !hasGameDevAccess) {
-      setError("Game Development requires Zony AI Dev subscription");
-      return;
-    }
-
-    if (type === "video" && !hasVideoGenAccess) {
-      setError("Video generation requires Video Generation AI subscription");
+      setError('Please enter a prompt');
       return;
     }
 
     setLoading(true);
-    setError("");
-    setResult("");
+    setError('');
+    setGeneratedScript('');
 
     try {
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, type, userId })
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: generatorType,
+          prompt,
+          accessCode,
+        }),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Generation failed");
+        throw new Error(data.error || 'Generation failed');
       }
 
       const data = await response.json();
-      setResult(data.result);
-      setResultType(type as "code" | "video");
+      setGeneratedScript(data.script);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCopy = () => {
-    if (resultType === "code") {
-      navigator.clipboard.writeText(result);
-      alert("Copied to clipboard!");
-    }
+    navigator.clipboard.writeText(generatedScript);
+    alert('Script copied to clipboard!');
   };
 
   const handleDownload = () => {
-    if (resultType === "code") {
-      const element = document.createElement("a");
-      const file = new Blob([result], { type: "text/plain" });
-      element.href = URL.createObjectURL(file);
-      element.download = `generated-code-${Date.now()}.txt`;
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-    } else if (resultType === "video") {
-      const link = document.createElement("a");
-      link.href = result;
-      link.download = `generated-video-${Date.now()}.mp4`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+    const element = document.createElement('a');
+    const file = new Blob([generatedScript], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${generatorType}-script-${Date.now()}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   return (
-    <div style={{ padding: "20px", maxWidth: "900px", margin: "0 auto", fontFamily: "sans-serif" }}>
-      <h1>🚀 Zony AI Generator</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">Zony AI Generator</h1>
+          <p className="text-gray-300">Access Code: <span className="font-mono text-green-400">{accessCode}</span></p>
+        </div>
 
-      <div style={{ marginBottom: "20px" }}>
-        <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>
-          Select Generation Type:
-        </label>
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          style={{ padding: "10px", fontSize: "16px", width: "100%", maxWidth: "400px" }}
-        >
-          <option value="code" disabled={!hasGameDevAccess}>
-            💻 Game Development {!hasGameDevAccess ? "(Locked)" : "(Groq)"}
-          </option>
-          <option value="video" disabled={!hasVideoGenAccess}>
-            🎬 Video Generation {!hasVideoGenAccess ? "(Locked)" : "(AI)"}
-          </option>
-        </select>
-        {!hasGameDevAccess && (
-          <p style={{ color: "#666", fontSize: "14px", marginTop: "8px" }}>
-            💡 Game Development requires Zony AI Dev subscription
-          </p>
-        )}
-        {!hasVideoGenAccess && (
-          <p style={{ color: "#666", fontSize: "14px", marginTop: "8px" }}>
-            💡 Video Generation requires Video Generation AI subscription
-          </p>
-        )}
-      </div>
-
-      <div style={{ marginBottom: "20px" }}>
-        <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>
-          Enter Your Prompt:
-        </label>
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder={
-            type === "code"
-              ? "Describe the game mechanic you want..."
-              : "Describe the video concept..."
-          }
-          style={{
-            width: "100%",
-            minHeight: "120px",
-            padding: "10px",
-            fontSize: "16px",
-            fontFamily: "monospace",
-            border: "1px solid #ccc",
-            borderRadius: "4px"
-          }}
-        />
-      </div>
-
-      <button
-        onClick={handleGenerate}
-        disabled={loading}
-        style={{
-          padding: "10px 20px",
-          fontSize: "16px",
-          backgroundColor: loading ? "#ccc" : "#007bff",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor: loading ? "not-allowed" : "pointer",
-          marginRight: "10px"
-        }}
-      >
-        {loading ? "Generating..." : "Generate"}
-      </button>
-
-      {error && <div style={{ color: "red", marginTop: "20px", fontWeight: "bold" }}>{error}</div>}
-
-      {result && (
-        <div style={{ marginTop: "30px" }}>
-          <h3>Result:</h3>
-          {resultType === "code" && (
-            <pre
-              style={{
-                backgroundColor: "#f5f5f5",
-                padding: "15px",
-                borderRadius: "4px",
-                overflow: "auto",
-                maxHeight: "400px",
-                border: "1px solid #ddd",
-                fontFamily: "monospace",
-                fontSize: "14px"
-              }}
-            >
-              {result}
-            </pre>
-          )}
-          {resultType === "video" && (
-            <video
-              src={result}
-              style={{
-                maxWidth: "100%",
-                maxHeight: "500px",
-                borderRadius: "4px",
-                border: "1px solid #ddd"
-              }}
-              controls
-            />
-          )}
-
-          <div style={{ marginTop: "15px" }}>
-            {resultType === "code" && (
-              <>
-                <button
-                  onClick={handleCopy}
-                  style={{
-                    padding: "8px 16px",
-                    marginRight: "10px",
-                    backgroundColor: "#28a745",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    fontSize: "14px"
-                  }}
-                >
-                  📋 Copy
-                </button>
-              </>
-            )}
+        <div className="bg-slate-700 rounded-lg p-6 mb-6 border border-slate-600">
+          <h2 className="text-lg font-bold text-white mb-4">Select Generator</h2>
+          <div className="flex gap-4">
             <button
-              onClick={handleDownload}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#17a2b8",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "14px"
-              }}
+              onClick={() => setGeneratorType('game')}
+              className={`px-6 py-2 rounded font-bold transition ${
+                generatorType === 'game'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-slate-600 text-gray-300 hover:bg-slate-500'
+              }`}
             >
-              ⬇️ Download
+              Game Dev Code
+            </button>
+            <button
+              onClick={() => setGeneratorType('video')}
+              className={`px-6 py-2 rounded font-bold transition ${
+                generatorType === 'video'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-600 text-gray-300 hover:bg-slate-500'
+              }`}
+            >
+              Video Generation
             </button>
           </div>
         </div>
-      )}
+
+        <div className="bg-slate-700 rounded-lg p-6 mb-6 border border-slate-600">
+          <label className="block text-white font-bold mb-2">Enter Your Prompt</label>
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Describe what you want..."
+            className="w-full px-4 py-3 rounded bg-slate-600 text-white placeholder-gray-400 border border-slate-500 h-24 resize-none"
+          />
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="mt-4 w-full bg-purple-600 hover:bg-purple-700 disabled:bg-slate-500 text-white font-bold py-2 px-4 rounded transition"
+          >
+            {loading ? 'Generating...' : 'Generate Script'}
+          </button>
+        </div>
+
+        {error && (
+          <div className="bg-red-900 text-red-200 rounded-lg p-4 mb-6 border border-red-700">
+            {error}
+          </div>
+        )}
+
+        {generatedScript && (
+          <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+            <h3 className="text-lg font-bold text-white mb-4">Generated Script</h3>
+            <pre className="bg-slate-800 p-4 rounded text-gray-100 text-sm overflow-x-auto mb-4 max-h-96">
+              {generatedScript}
+            </pre>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCopy}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition"
+              >
+                Copy to Clipboard
+              </button>
+              <button
+                onClick={handleDownload}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition"
+              >
+                Download
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
