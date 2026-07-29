@@ -11,24 +11,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = await fetch(`https://api.whop.com/api/v1/members/${userId}`, {
+    const response = await fetch(https://api.whop.com/api/v1/members/, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${process.env.WHOP_API_KEY}`,
+        Authorization: Bearer ,
         'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: `Whop API error: ${response.status}` },
+        { error: Whop API error:  },
         { status: response.status }
       );
     }
 
     const memberData = await response.json();
     
-    // Extract memberships and check status
     const memberships = memberData.memberships || [];
     const hasGameDev = memberships.some(
       (m) => m.product_id === 'prod_2NCaLmIX3miCc' && 
