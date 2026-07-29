@@ -1,49 +1,58 @@
-﻿"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import ScriptGenerator from "@/app/components/ScriptGenerator";
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import ScriptGenerator from '@/app/components/ScriptGenerator';
 
-export default function ExperiencePage() {
-  const [mounted, setMounted] = useState(false);
-  const [userId, setUserId] = useState("");
+export default function ExperiencePage({ params }: { params: { experienceId: string } }) {
+  const searchParams = useSearchParams();
+  const devToken = searchParams.get('whop-dev-user-token');
+  
+  const [userId, setUserId] = useState<string | null>(null);
   const [userProducts, setUserProducts] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true);
+    if (!devToken) {
+      setError('No dev token provided');
+      setLoading(false);
+      return;
+    }
 
-    const fetchUserData = async () => {
-      try {
-        const token = new URLSearchParams(window.location.search).get("whop-dev-user-token");
-        if (!token) return;
+    // Decode JWT to extract user ID
+    try {
+      const parts = devToken.split('.');
+      if (parts.length !== 3) throw new Error('Invalid token format');
+      
+      const payload = JSON.parse(atob(parts[1]));
+      const extractedUserId = payload.sub;
+      setUserId(extractedUserId);
 
-        // Decode token to get userId
-        const parts = token.split(".");
-        if (parts.length !== 3) return;
-
-        const decoded = JSON.parse(atob(parts[1]));
-        const uid = decoded.sub;
-        setUserId(uid);
-
-        // Fetch user memberships to get products
-        const response = await fetch(`/api/user-access?userId=${uid}`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
+      // Fetch user's product memberships
+      fetch('/api/user-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: extractedUserId }),
+      })
+        .then(res => res.json())
+        .then(data => {
           setUserProducts(data.products || []);
-        }
-      } catch (error) {
-        console.error("Auth error:", error);
-      }
-    };
+          setLoading(false);
+        })
+        .catch(err => {
+          setError(err.message);
+          setLoading(false);
+        });
+    } catch (err) {
+      setError('Failed to parse token');
+      setLoading(false);
+    }
+  }, [devToken]);
 
-    fetchUserData();
-  }, []);
-
-  if (!mounted) {
-    return <div style={{ padding: "20px", textAlign: "center" }}>Loading...</div>;
-  }
+  if (loading) return <div style={{ padding: '20px' }}>Loading...</div>;
+  if (error) return <div style={{ padding: '20px', color: 'red' }}>Error: {error}</div>;
+  if (!userId) return <div style={{ padding: '20px', color: 'red' }}>No user ID found</div>;
 
   return <ScriptGenerator userId={userId} userProducts={userProducts} />;
 }
