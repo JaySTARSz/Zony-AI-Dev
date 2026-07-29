@@ -1,4 +1,4 @@
-import Groq from "groq-sdk";
+﻿import Groq from "groq-sdk";
 import { HfInference } from "@huggingface/inference";
 
 const groq = new Groq({
@@ -26,8 +26,11 @@ export async function POST(request: Request) {
       const message = await groq.chat.completions.create({
         model: "mixtral-8x7b-32768",
         max_tokens: 2048,
-        system: systemPrompt,
         messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
           {
             role: "user",
             content: prompt,
@@ -68,6 +71,10 @@ export async function POST(request: Request) {
           model: "mixtral-8x7b-32768",
           max_tokens: 1024,
           messages: [
+            {
+              role: "system",
+              content: `You are a creative video scriptwriter and storyboard designer. Generate detailed video descriptions, storyboards, and scripts.`,
+            },
             {
               role: "user",
               content: `Create a detailed video storyboard and script for: "${prompt}". Include scenes, timing, directions, effects, and dialogue.`,
