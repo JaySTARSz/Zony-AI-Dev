@@ -34,7 +34,7 @@ export default function Home() {
             <h1 className="text-4xl font-bold text-white mb-2">Zony AI</h1>
             <p className="text-gray-300">Generator unlocked</p>
           </div>
-          <ScriptGenerator />
+          <ScriptGenerator accessCode={accessCode} />
         </div>
       </div>
     );
