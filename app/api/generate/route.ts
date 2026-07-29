@@ -1,4 +1,3 @@
-app api generate route.ts
 import { Groq } from "groq-sdk";
 import { HfInference } from "@huggingface/inference";
 
