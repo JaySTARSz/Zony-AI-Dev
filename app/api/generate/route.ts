@@ -38,9 +38,14 @@ export async function POST(request: Request) {
         ],
       });
 
+      const content = message.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error("Groq returned empty content");
+      }
+
       result = {
         type: "game-dev",
-        content: message.choices[0]?.message?.content || "",
+        content: content,
       };
     } else if (type === "video-gen") {
       try {
@@ -82,12 +87,22 @@ export async function POST(request: Request) {
           ],
         });
 
+        const content = scriptResponse.choices[0]?.message?.content;
+        if (!content) {
+          throw new Error("Groq script generation returned empty content");
+        }
+
         result = {
           type: "video-gen",
-          content: scriptResponse.choices[0]?.message?.content || "",
+          content: content,
           message: "Video script generated (video generation unavailable).",
         };
       }
+    } else {
+      return new Response(
+        JSON.stringify({ error: "Invalid type" }),
+        { status: 400 }
+      );
     }
 
     return new Response(JSON.stringify(result), {
@@ -97,7 +112,10 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Generation error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Generation failed" }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : "Generation failed",
+        details: error
+      }),
       { status: 500 }
     );
   }
